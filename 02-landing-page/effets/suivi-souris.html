@@ -1,0 +1,217 @@
+<!doctype html>
+<!--
+  EFFET : Bouton magnétique et aperçu qui suit la souris
+
+  Bibliothèque : aucune (JavaScript du navigateur, environ 60 lignes).
+  Poids : environ 1 Ko.
+
+  Ce que ça fait, deux variantes du même mécanisme (choisir UNE des deux pour une page) :
+    A. Bouton magnétique : quand la souris approche du bouton principal, il est légèrement attiré
+       vers elle, puis revient en place avec souplesse. Le bouton dit « je suis là ».
+    B. Aperçu qui suit la souris : au survol d'une liste (réalisations, services, lieux), une image
+       apparaît et suit le pointeur. La liste reste sobre ; l'image vient à la demande.
+
+  Quand l'utiliser : A pour UN bouton, l'appel à l'action principal, sur une page plutôt calme.
+  B pour une liste de 3 à 8 éléments qui ont chacun une vraie image (photo, capture).
+
+  Quand l'éviter : sur tous les boutons de la page ; sur un formulaire (le bouton d'envoi ne doit pas
+  bouger) ; B sans vraies images (des carrés de couleur n'apportent rien) ; avec un curseur personnalisé
+  qui remplace celui du système (gêne la lecture et l'accessibilité).
+
+  Accessibilité : rien ne se passe sur écran tactile (pas de souris), ni avec « réduire les
+  animations ». Le bouton reste un vrai <a> ou <button>, cliquable à sa place d'origine. Pour B,
+  l'image est décorative (aria-hidden) : chaque élément de liste a déjà son lien et son texte.
+
+  Intégrer dans site/ :
+    1. styles.css : le bloc CSS entre les repères « À COPIER » (A, B ou les deux).
+    2. script.js (ou <script> avant </body>) : le script « À COPIER (JS) ».
+    3. A : ajouter l'attribut data-magnetique sur le bouton principal.
+       B : ajouter data-apercu sur la liste et data-image="images/xxx.webp" sur chaque <li>.
+       Les images vont dans site/images/ (WebP, 300 Ko au plus).
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bouton magnétique et aperçu</title>
+<style>
+  :root {
+    /* Palette neutre : remplacez par les couleurs de votre charte */
+    --fond: #F2F3F5;
+    --encre: #16181D;
+    --encre-douce: #5B606B;
+    --accent: #3346D3;
+    --texte-accent: #FFFFFF;
+    --filet: #C9CDD4;
+    --police: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --marge: clamp(16px, 4vw, 48px);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fond);
+    color: var(--encre);
+    font-family: var(--police);
+    font-size: clamp(16px, 0.4vw + 15px, 18px);
+    line-height: 1.6;
+  }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+  /* Démo seulement (ne pas copier) */
+  .demo-barre { padding: 0 var(--marge); border-bottom: 1px solid var(--filet); }
+  .demo-barre a { display: inline-flex; align-items: center; min-height: 44px; color: var(--encre-douce); font-size: 14px; }
+  .demo-bloc { padding: clamp(64px, 12vh, 112px) var(--marge); max-width: 1100px; }
+  .demo-bloc h1, .demo-bloc h2 { font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.06; letter-spacing: -0.02em; margin: 0 0 16px; max-width: 18ch; }
+  .demo-bloc > p { color: var(--encre-douce); margin: 0 0 40px; max-width: 52ch; }
+  .demo-libelle { font-size: 14px; color: var(--encre-douce); margin: 0 0 8px; }
+  /* Les « images » de démo : remplacez par de vraies photos (data-image) */
+  .demo-visuel-1 { background: linear-gradient(135deg, #2F3BA8, #9AA6F0); }
+  .demo-visuel-2 { background: linear-gradient(135deg, #16181D, #5B606B); }
+  .demo-visuel-3 { background: linear-gradient(135deg, #8A93A6, #E6E8EC); }
+  .demo-visuel-4 { background: linear-gradient(135deg, #3346D3, #16181D); }
+
+  /* ==== À COPIER (CSS, variante A) : début ==== */
+  .bouton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 56px;
+    padding: 0 32px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--texte-accent);
+    font-weight: 600;
+    text-decoration: none;
+    will-change: transform;
+  }
+  .bouton__texte { display: inline-block; will-change: transform; }
+  /* ==== À COPIER (CSS, variante A) : fin ==== */
+
+  /* ==== À COPIER (CSS, variante B) : début ==== */
+  .liste-apercu { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--filet); }
+  .liste-apercu li { border-bottom: 1px solid var(--filet); }
+  .liste-apercu a {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    min-height: 44px;
+    padding: 20px 0;
+    color: inherit;
+    text-decoration: none;
+    font-size: clamp(1.4rem, 3.6vw, 2.6rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .liste-apercu a span { font-size: 15px; font-weight: 400; letter-spacing: 0; color: var(--encre-douce); white-space: nowrap; }
+  .apercu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 20;
+    width: clamp(200px, 22vw, 320px);
+    aspect-ratio: 4 / 5;
+    border-radius: 6px;
+    background-size: cover;
+    background-position: center;
+    pointer-events: none;
+    opacity: 0;
+    scale: 0.85;
+    transition: opacity .25s ease, scale .35s cubic-bezier(.2, .8, .2, 1);
+  }
+  .apercu.est-visible { opacity: 1; scale: 1; }
+  /* ==== À COPIER (CSS, variante B) : fin ==== */
+</style>
+</head>
+<body>
+  <nav class="demo-barre"><a href="index.html">Catalogue des effets</a></nav>
+
+  <section class="demo-bloc">
+    <h1>Un bouton qui répond à l'approche.</h1>
+    <p>Variante A. Approchez la souris du bouton&nbsp;: il est attiré, puis revient en place. Sur téléphone, il reste immobile.</p>
+    <a class="bouton" href="#" data-magnetique><span class="bouton__texte">Réserver un appel</span></a><!-- À FAIRE : lien réel -->
+  </section>
+
+  <section class="demo-bloc">
+    <h2>Une liste qui montre à la demande.</h2>
+    <p>Variante B. Survolez une ligne&nbsp;: son image apparaît et suit le pointeur. Les carrés de couleur remplacent ici de vraies photos.</p>
+    <ul class="liste-apercu" data-apercu>
+      <li data-image="" data-demo-classe="demo-visuel-1"><a href="#">Atelier de Lausanne <span>2025</span></a></li>
+      <li data-image="" data-demo-classe="demo-visuel-2"><a href="#">Boutique de Genève <span>2024</span></a></li>
+      <li data-image="" data-demo-classe="demo-visuel-3"><a href="#">Showroom de Fribourg <span>2024</span></a></li>
+      <li data-image="" data-demo-classe="demo-visuel-4"><a href="#">Bureau de Sion <span>2023</span></a></li>
+    </ul>
+  </section>
+
+  <!-- ==== À COPIER (JS) : début ==== -->
+  <script>
+    (function () {
+      // Seulement avec une vraie souris, et si la personne accepte les animations.
+      var ok = window.matchMedia('(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)');
+      if (!ok.matches) return;
+
+      var lisser = function (a, b, f) { return a + (b - a) * f; };
+
+      // ---- Variante A : bouton magnétique ----
+      document.querySelectorAll('[data-magnetique]').forEach(function (bouton) {
+        var texte = bouton.querySelector('.bouton__texte');
+        var force = 0.35, zone = 80; // force d'attraction, distance d'action en px
+        var cible = { x: 0, y: 0 }, pos = { x: 0, y: 0 }, anim = 0;
+
+        function image() {
+          pos.x = lisser(pos.x, cible.x, 0.18);
+          pos.y = lisser(pos.y, cible.y, 0.18);
+          bouton.style.transform = 'translate(' + pos.x.toFixed(2) + 'px,' + pos.y.toFixed(2) + 'px)';
+          if (texte) texte.style.transform = 'translate(' + (pos.x * 0.35).toFixed(2) + 'px,' + (pos.y * 0.35).toFixed(2) + 'px)';
+          var fini = Math.abs(pos.x - cible.x) < 0.05 && Math.abs(pos.y - cible.y) < 0.05;
+          anim = fini ? 0 : requestAnimationFrame(image);
+        }
+        window.addEventListener('pointermove', function (e) {
+          var r = bouton.getBoundingClientRect();
+          var cx = r.left + r.width / 2 - pos.x, cy = r.top + r.height / 2 - pos.y;
+          var dx = e.clientX - cx, dy = e.clientY - cy;
+          var proche = Math.abs(dx) < r.width / 2 + zone && Math.abs(dy) < r.height / 2 + zone;
+          cible.x = proche ? dx * force : 0;
+          cible.y = proche ? dy * force : 0;
+          if (!anim) anim = requestAnimationFrame(image);
+        }, { passive: true });
+      });
+
+      // ---- Variante B : aperçu qui suit la souris ----
+      document.querySelectorAll('[data-apercu]').forEach(function (liste) {
+        var apercu = document.createElement('div');
+        apercu.className = 'apercu';
+        apercu.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(apercu);
+        var cible = { x: 0, y: 0 }, pos = { x: 0, y: 0 }, anim = 0, actif = false;
+
+        function image() {
+          pos.x = lisser(pos.x, cible.x, 0.16);
+          pos.y = lisser(pos.y, cible.y, 0.16);
+          apercu.style.translate = (pos.x + 24).toFixed(1) + 'px ' + (pos.y - apercu.offsetHeight / 2).toFixed(1) + 'px';
+          anim = actif || Math.abs(pos.x - cible.x) > 0.1 ? requestAnimationFrame(image) : 0;
+        }
+        liste.addEventListener('pointermove', function (e) {
+          cible.x = e.clientX; cible.y = e.clientY;
+          if (!actif) { pos.x = cible.x; pos.y = cible.y; }
+          if (!anim) anim = requestAnimationFrame(image);
+        }, { passive: true });
+        liste.querySelectorAll('li').forEach(function (li) {
+          li.addEventListener('pointerenter', function () {
+            actif = true;
+            var src = li.getAttribute('data-image');
+            apercu.style.backgroundImage = src ? 'url("' + src + '")' : '';
+            apercu.className = 'apercu est-visible ' + (li.getAttribute('data-demo-classe') || ''); // data-demo-classe : démo seulement
+          });
+        });
+        liste.addEventListener('pointerleave', function () {
+          actif = false;
+          apercu.classList.remove('est-visible');
+        });
+      });
+    })();
+  </script>
+  <!-- ==== À COPIER (JS) : fin ==== -->
+</body>
+</html>

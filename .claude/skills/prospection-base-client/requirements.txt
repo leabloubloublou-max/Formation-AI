@@ -1,0 +1,6 @@
+# Dépendances Python du skill (Python 3.11 ou plus). Installation : voir README.md.
+requests>=2.31        # API Apollo, sites web, registre suisse
+beautifulsoup4>=4.12  # lecture des pages web
+lxml>=5               # analyseur HTML rapide (collecte des sites)
+ddgs>=9.14,<10        # recherche DuckDuckGo, sans clé
+openpyxl>=3.1         # fichier d'appel au format Excel

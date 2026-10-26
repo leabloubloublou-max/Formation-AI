@@ -1,0 +1,246 @@
+<!doctype html>
+<!--
+  EFFET : Fond animé en dégradé organique (shader WebGL)
+
+  Bibliothèque : OGL 1.0.11 (licence Unlicense, domaine public), modules ES chargés depuis jsdelivr
+                 (version figée). On n'importe que 4 modules (Renderer, Program, Mesh, Triangle).
+  Poids : environ 29 Ko compressés (17 petits fichiers que le navigateur télécharge en parallèle).
+
+  Ce que ça fait : derrière le haut de page, trois couleurs se mélangent lentement comme une encre
+  dans l'eau. Le mouvement est très lent : on doit le remarquer après quelques secondes, pas tout
+  de suite. Les couleurs viennent des variables CSS --shader-1, --shader-2, --shader-3.
+  Le calcul s'arrête quand le haut de page sort de l'écran ou que l'onglet est caché (batterie).
+
+  Quand l'utiliser : comme moment fort d'un haut de page sans photo, pour un produit abstrait
+  (service, logiciel, conseil) où il n'y a rien de concret à montrer. Avec un titre court et
+  un contraste de texte vérifié par-dessus.
+
+  Quand l'éviter : si vous avez une vraie photo ou une capture du produit (montrez-la plutôt) ;
+  derrière du texte long ; sur toute la page (seulement le haut) ; avec un autre effet en mouvement
+  dans le même écran ; avec des couleurs vives qui « clignotent ».
+
+  Accessibilité et repli : avec « réduire les animations », WebGL n'est même pas chargé : le fond
+  est un dégradé CSS fixe avec les mêmes couleurs. Même repli si WebGL est indisponible ou si le
+  CDN ne répond pas. Le canvas est décoratif (aria-hidden).
+
+  Intégrer dans site/ :
+    1. index.html : la structure <header class="hero-shader"> avec son <canvas> et son contenu.
+    2. styles.css : le bloc CSS entre les repères « À COPIER ».
+    3. index.html, avant </body> : le <script type="module"> « À COPIER (fin) ». Il doit rester un
+       module (type="module") ; il peut aussi aller dans un fichier shader.js chargé en type="module".
+    4. Choisir les trois couleurs (--shader-1/2/3) dans la charte, en format #RRGGBB, puis vérifier
+       le contraste du titre sur la plus claire ET la plus sombre.
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fond shader en dégradé organique</title>
+<style>
+  :root {
+    /* Palette neutre : remplacez par les couleurs de votre charte (format #RRGGBB) */
+    --fond: #F2F3F5;
+    --encre: #16181D;
+    --encre-douce: #5B606B;
+    --accent: #3346D3;
+    --filet: #D5D8DE;
+    --shader-1: #1B1F3B;   /* base sombre */
+    --shader-2: #3346D3;   /* couleur principale */
+    --shader-3: #9AA6F0;   /* lumière */
+    --texte-sur-shader: #FFFFFF;
+    --police: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --marge: clamp(16px, 4vw, 48px);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fond);
+    color: var(--encre);
+    font-family: var(--police);
+    font-size: clamp(16px, 0.4vw + 15px, 18px);
+    line-height: 1.6;
+  }
+  a:focus-visible { outline: 2px solid var(--texte-sur-shader); outline-offset: 3px; }
+
+  /* Démo seulement (ne pas copier) */
+  .demo-barre { position: absolute; z-index: 2; inset: 0 0 auto 0; padding: 0 var(--marge); }
+  .demo-barre a { display: inline-flex; align-items: center; min-height: 44px; color: var(--texte-sur-shader); font-size: 14px; }
+  .demo-bloc { padding: 80px var(--marge); max-width: 760px; }
+  .demo-bloc h2 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.08; letter-spacing: -0.02em; margin: 0 0 20px; }
+  .demo-bloc p { color: var(--encre-douce); margin: 0; max-width: 52ch; }
+  .demo-etat { font-size: 13px; opacity: .8; margin-top: 24px !important; }
+
+  /* ==== À COPIER (CSS) : début ==== */
+  .hero-shader {
+    position: relative;
+    isolation: isolate;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: clamp(80px, 14vh, 140px) var(--marge) clamp(48px, 10vh, 96px);
+    color: var(--texte-sur-shader);
+    /* Repli : dégradé fixe avec les mêmes couleurs (visible sans WebGL ou en mouvement réduit) */
+    background:
+      radial-gradient(ellipse 80% 60% at 75% 20%, var(--shader-3) 0%, transparent 60%),
+      radial-gradient(ellipse 90% 70% at 20% 80%, var(--shader-2) 0%, transparent 65%),
+      var(--shader-1);
+    overflow: hidden;
+  }
+  .hero-shader__canvas {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    display: block;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+  }
+  .hero-shader.shader-pret .hero-shader__canvas { opacity: 1; }
+  .hero-shader h1 {
+    margin: 0;
+    font-size: clamp(2.6rem, 8vw, 6.4rem);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    max-width: 12ch;
+  }
+  .hero-shader p { margin: 24px 0 0; max-width: 42ch; font-size: clamp(1.05rem, 1.4vw, 1.25rem); }
+  /* ==== À COPIER (CSS) : fin ==== */
+</style>
+</head>
+<body>
+  <nav class="demo-barre"><a href="index.html">Catalogue des effets</a></nav>
+
+  <!-- ==== À COPIER (HTML) : début ==== -->
+  <header class="hero-shader">
+    <canvas class="hero-shader__canvas" aria-hidden="true"></canvas>
+    <h1>Un fond qui respire, très lentement.</h1>
+    <p>Trois couleurs de la charte se mélangent derrière le titre. Le mouvement se remarque après quelques secondes.</p>
+    <p class="demo-etat" id="demo-etat">Fond fixe (dégradé CSS).</p>
+  </header>
+  <!-- ==== À COPIER (HTML) : fin ==== -->
+
+  <section class="demo-bloc">
+    <h2>La suite de la page reste calme.</h2>
+    <p>Quand le haut de page sort de l'écran, le calcul s'arrête pour économiser la batterie du téléphone.</p>
+  </section>
+  <div style="height: 60vh" aria-hidden="true"></div>
+
+  <!-- ==== À COPIER (fin) : début ==== -->
+  <script type="module">
+    const hero = document.querySelector('.hero-shader');
+    const canvas = hero && hero.querySelector('.hero-shader__canvas');
+    const reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Test WebGL sans rien charger : s'il manque, on garde le dégradé CSS.
+    const webglOk = (() => {
+      try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); }
+      catch (e) { return false; }
+    })();
+
+    if (hero && canvas && !reduit && webglOk) {
+      demarrer().catch(() => { /* CDN indisponible : on garde le dégradé CSS */ });
+    }
+
+    async function demarrer() {
+      const base = 'https://cdn.jsdelivr.net/npm/ogl@1.0.11/src/';
+      const [{ Renderer }, { Program }, { Mesh }, { Triangle }] = await Promise.all([
+        import(base + 'core/Renderer.js'),
+        import(base + 'core/Program.js'),
+        import(base + 'core/Mesh.js'),
+        import(base + 'extras/Triangle.js'),
+      ]);
+
+      // Couleurs lues dans les variables CSS (#RRGGBB) : on change la charte, le shader suit.
+      const style = getComputedStyle(hero);
+      const couleur = (nom) => {
+        const hex = style.getPropertyValue(nom).trim().replace('#', '');
+        const n = parseInt(hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex, 16);
+        return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255];
+      };
+
+      // dpr limité à 1,5 et rendu à 60 % de la taille : le flou est voulu, et c'est léger pour un téléphone.
+      const qualite = 0.6;
+      const renderer = new Renderer({ canvas, dpr: Math.min(window.devicePixelRatio || 1, 1.5) * qualite, alpha: false, depth: false });
+      const gl = renderer.gl;
+
+      const program = new Program(gl, {
+        vertex: /* glsl */ `
+          attribute vec2 position;
+          attribute vec2 uv;
+          varying vec2 vUv;
+          void main() { vUv = uv; gl_Position = vec4(position, 0.0, 1.0); }
+        `,
+        fragment: /* glsl */ `
+          precision highp float;
+          uniform float uTemps;
+          uniform vec2 uTaille;
+          uniform vec3 uC1; uniform vec3 uC2; uniform vec3 uC3;
+          varying vec2 vUv;
+
+          // Bruit doux (value noise) : assez pour un mélange organique, sans calcul lourd.
+          float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+          float bruit(vec2 p) {
+            vec2 i = floor(p), f = fract(p);
+            vec2 u = f * f * (3.0 - 2.0 * f);
+            return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+                       mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+          }
+          float fbm(vec2 p) {
+            float v = 0.0, a = 0.5;
+            for (int i = 0; i < 4; i++) { v += a * bruit(p); p *= 2.0; a *= 0.5; }
+            return v;
+          }
+          void main() {
+            vec2 p = vUv * vec2(uTaille.x / uTaille.y, 1.0) * 1.6;
+            float t = uTemps * 0.04;                       // vitesse : très lente
+            vec2 q = vec2(fbm(p + t), fbm(p + vec2(5.2, 1.3) - t));
+            float n = fbm(p + 2.2 * q + vec2(t * 0.7, -t));
+            vec3 c = mix(uC1, uC2, smoothstep(0.2, 0.75, n));
+            c = mix(c, uC3, smoothstep(0.55, 0.95, n * q.y * 1.6));
+            // Bas de l'image plus sombre : le titre posé en bas reste lisible.
+            c = mix(c, uC1, smoothstep(0.55, 0.0, vUv.y) * 0.55);
+            gl_FragColor = vec4(c, 1.0);
+          }
+        `,
+        uniforms: {
+          uTemps: { value: 0 },
+          uTaille: { value: [1, 1] },
+          uC1: { value: couleur('--shader-1') },
+          uC2: { value: couleur('--shader-2') },
+          uC3: { value: couleur('--shader-3') },
+        },
+      });
+      const mesh = new Mesh(gl, { geometry: new Triangle(gl), program });
+
+      const redimensionner = () => {
+        const { width, height } = hero.getBoundingClientRect();
+        renderer.setSize(width, height);
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        program.uniforms.uTaille.value = [width, height];
+      };
+      window.addEventListener('resize', redimensionner);
+      redimensionner();
+
+      // On ne calcule que si le haut de page est visible et l'onglet affiché.
+      let visible = true, boucle = 0, depart = performance.now() - 20000 * Math.random();
+      const image = (maintenant) => {
+        program.uniforms.uTemps.value = (maintenant - depart) / 1000;
+        renderer.render({ scene: mesh });
+        boucle = visible && !document.hidden ? requestAnimationFrame(image) : 0;
+      };
+      const relancer = () => { if (!boucle && visible && !document.hidden) boucle = requestAnimationFrame(image); };
+      new IntersectionObserver(([e]) => { visible = e.isIntersecting; relancer(); }).observe(hero);
+      document.addEventListener('visibilitychange', relancer);
+
+      relancer();
+      hero.classList.add('shader-pret');
+      const etat = document.getElementById('demo-etat'); // démo seulement
+      if (etat) etat.textContent = 'Fond animé (WebGL).';
+    }
+  </script>
+  <!-- ==== À COPIER (fin) : fin ==== -->
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!doctype html>
+<!--
+  EFFET : Section épinglée en trois étapes
+
+  Bibliothèque : GSAP 3.15.0 + ScrollTrigger, depuis jsdelivr (version figée).
+                 Licence GSAP « Standard no charge » : gratuite, y compris pour un usage commercial.
+  Poids : environ 46 Ko compressés (gsap 28 Ko + ScrollTrigger 18 Ko).
+
+  Ce que ça fait : la section reste fixée à l'écran pendant que la personne fait défiler.
+  Le défilement fait passer d'une étape à la suivante (1, puis 2, puis 3), avec une barre de
+  progression. Une fois la troisième étape lue, la page reprend son cours.
+
+  Quand l'utiliser : pour une vraie suite de trois (ou quatre) étapes ou gestes : « comment ça
+  marche », un avant / pendant / après. Une seule section épinglée par page.
+
+  Quand l'éviter : si les étapes ne sont pas une vraie suite ; si chaque étape demande plus de
+  trois lignes de texte (l'écran de téléphone est petit) ; en haut de page (la personne doit
+  d'abord savoir de quoi parle la page) ; à côté d'un autre effet de défilement.
+
+  Accessibilité : avec « réduire les animations » ou sans JavaScript, rien n'est épinglé : les trois
+  étapes s'affichent l'une sous l'autre, comme une liste normale. Le texte reste dans une liste <ol>.
+
+  Intégrer dans site/ :
+    1. index.html : la <section class="etapes"> entière (adapter les textes).
+    2. styles.css : le bloc CSS entre les repères « À COPIER ».
+    3. index.html, avant </body> : les deux <script src> GSAP, puis le <script> « À COPIER (fin) »
+       (ou son contenu dans script.js, chargé après les scripts GSAP).
+    4. Remplacer les variables de :root par celles de la charte.
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Section épinglée en trois étapes</title>
+<style>
+  :root {
+    /* Palette neutre : remplacez par les couleurs de votre charte */
+    --fond: #F2F3F5;
+    --fond-section: #16181D;
+    --texte-section: #F2F3F5;
+    --texte-section-doux: #A9AEB8;
+    --encre: #16181D;
+    --encre-douce: #5B606B;
+    --accent: #8C9BFF;
+    --filet: #D5D8DE;
+    --police: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --marge: clamp(16px, 4vw, 48px);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fond);
+    color: var(--encre);
+    font-family: var(--police);
+    font-size: clamp(16px, 0.4vw + 15px, 18px);
+    line-height: 1.6;
+  }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* Démo seulement (ne pas copier) */
+  .demo-barre { padding: 0 var(--marge); border-bottom: 1px solid var(--filet); }
+  .demo-barre a { display: inline-flex; align-items: center; min-height: 44px; color: var(--encre-douce); font-size: 14px; }
+  .demo-bloc { padding: 96px var(--marge); max-width: 760px; }
+  .demo-bloc h1, .demo-bloc h2 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.08; letter-spacing: -0.02em; margin: 0 0 20px; }
+  .demo-bloc p { color: var(--encre-douce); margin: 0; max-width: 52ch; }
+
+  /* ==== À COPIER (CSS) : début ==== */
+  .etapes {
+    background: var(--fond-section);
+    color: var(--texte-section);
+    padding: 96px var(--marge);
+  }
+  .etapes__titre {
+    margin: 0 0 40px;
+    font-size: clamp(1.8rem, 4.5vw, 3rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    max-width: 18ch;
+  }
+  .etapes__liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 48px; }
+  .etape__numero {
+    display: block;
+    font-size: clamp(3.5rem, 12vw, 9rem);
+    line-height: 1;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 12px;
+  }
+  .etape h3 { margin: 0 0 8px; font-size: clamp(1.3rem, 2.6vw, 1.9rem); line-height: 1.2; }
+  .etape p { margin: 0; color: var(--texte-section-doux); max-width: 42ch; }
+  .etapes__progression { display: none; }
+
+  /* Version épinglée : seulement quand le JS l'active (mouvement autorisé). */
+  .etapes.est-epinglee {
+    height: 100svh;
+    padding-top: clamp(56px, 10vh, 96px);
+    padding-bottom: clamp(32px, 6vh, 64px);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+  }
+  /* Les trois étapes occupent la même case de grille : elles se superposent. */
+  .etapes.est-epinglee .etapes__liste { gap: 0; align-content: center; padding-bottom: 8vh; }
+  .etapes.est-epinglee .etape__numero { font-size: clamp(5rem, 24vw, 10rem); }
+  .etapes.est-epinglee .etape { grid-area: 1 / 1; }
+  .etapes.est-epinglee .etapes__progression {
+    display: block;
+    height: 2px;
+    background: color-mix(in srgb, var(--texte-section) 18%, transparent);
+  }
+  .etapes__barre { height: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); }
+
+  @media (min-width: 900px) {
+    .etapes.est-epinglee { grid-template-columns: 1fr 1.2fr; grid-template-rows: 1fr auto; column-gap: 64px; }
+    .etapes.est-epinglee .etapes__titre { align-self: center; }
+    .etapes.est-epinglee .etapes__liste { align-self: center; padding-bottom: 0; }
+    .etapes.est-epinglee .etapes__progression { grid-column: 1 / -1; }
+  }
+  /* ==== À COPIER (CSS) : fin ==== */
+</style>
+</head>
+<body>
+  <nav class="demo-barre"><a href="index.html">Catalogue des effets</a></nav>
+
+  <header class="demo-bloc">
+    <h1>Faites défiler&nbsp;: la section suivante se fixe à l'écran.</h1>
+    <p>Le défilement fait avancer les étapes une à une. Sur téléphone, le geste du pouce suffit.</p>
+  </header>
+
+  <!-- ==== À COPIER (HTML) : début ==== -->
+  <section class="etapes" aria-labelledby="etapes-titre">
+    <h2 class="etapes__titre" id="etapes-titre">Trois gestes, pas un de plus.</h2>
+    <ol class="etapes__liste">
+      <li class="etape">
+        <span class="etape__numero" aria-hidden="true">1</span>
+        <h3>Vous décrivez votre besoin</h3>
+        <p>Cinq minutes au téléphone ou un court formulaire. Pas de rendez-vous à caler.</p>
+      </li>
+      <li class="etape">
+        <span class="etape__numero" aria-hidden="true">2</span>
+        <h3>Nous préparons une proposition</h3>
+        <p>Un prix fixe et une date, envoyés par écrit. Vous gardez le temps de comparer.</p>
+      </li>
+      <li class="etape">
+        <span class="etape__numero" aria-hidden="true">3</span>
+        <h3>Vous recevez le résultat</h3>
+        <p>Livré à la date dite. Si ça ne convient pas, on reprend sans frais.</p>
+      </li>
+    </ol>
+    <div class="etapes__progression" aria-hidden="true"><div class="etapes__barre"></div></div>
+  </section>
+  <!-- ==== À COPIER (HTML) : fin ==== -->
+
+  <section class="demo-bloc">
+    <h2>La page reprend son cours.</h2>
+    <p>Après la troisième étape, la section se libère et le défilement redevient normal. Le reste de la page ne porte aucun autre effet de défilement&nbsp;: c'est voulu.</p>
+  </section>
+  <div style="height: 40vh" aria-hidden="true"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+
+  <!-- ==== À COPIER (fin) : début ==== -->
+  <script>
+    (function () {
+      if (!window.gsap || !window.ScrollTrigger) return; // sans GSAP : liste normale
+      gsap.registerPlugin(ScrollTrigger);
+
+      var mm = gsap.matchMedia();
+      // Tout ce bloc ne s'exécute que si la personne accepte les animations.
+      // Si elle change son réglage, GSAP défait tout proprement (épinglage compris).
+      mm.add('(prefers-reduced-motion: no-preference)', function () {
+        var section = document.querySelector('.etapes');
+        if (!section) return;
+        var etapes = gsap.utils.toArray('.etapes .etape');
+        section.classList.add('est-epinglee');
+
+        // État de départ : seule la première étape est visible.
+        gsap.set(etapes.slice(1), { autoAlpha: 0, y: 40 });
+
+        var tl = gsap.timeline({
+          defaults: { ease: 'power2.inOut', duration: 1 },
+          scrollTrigger: {
+            trigger: section,
+            start: 'top top',
+            end: '+=' + (etapes.length * 90) + '%', // environ un écran de défilement par étape
+            pin: true,
+            scrub: 0.6,          // l'animation suit le doigt, avec un léger lissage
+            anticipatePin: 1,
+            // À l'arrêt du défilement, la section se cale sur l'étape suivante (ou précédente,
+            // selon le sens du geste) : un petit coup de molette suffit à avancer.
+            snap: { snapTo: 'labelsDirectional', inertia: false, duration: { min: 0.2, max: 0.5 }, delay: 0.15, ease: 'power1.inOut' }
+          }
+        });
+
+        tl.addLabel('etape-1');
+        etapes.forEach(function (etape, i) {
+          if (i === 0) return;
+          tl.to(etapes[i - 1], { autoAlpha: 0, y: -40 })
+            .to(etape, { autoAlpha: 1, y: 0 }, '<0.3')
+            .addLabel('etape-' + (i + 1));
+        });
+        // La barre avance sur toute la durée.
+        tl.fromTo('.etapes__barre', { scaleX: 1 / etapes.length }, { scaleX: 1, ease: 'none', duration: tl.duration() }, 0);
+
+        return function () { section.classList.remove('est-epinglee'); };
+      });
+    })();
+  </script>
+  <!-- ==== À COPIER (fin) : fin ==== -->
+</body>
+</html>

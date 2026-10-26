@@ -1,0 +1,94 @@
+# Configuration d'une campagne de prospection.
+#
+# 1. Créez le dossier de la campagne, par exemple campagnes/maintenance-romandie/ à la racine de votre projet.
+# 2. Copiez-y ce fichier sous le nom campagne.toml.
+# 3. Remplacez chaque valeur marquée « À COMPLÉTER ». Les valeurs déjà écrites sont un EXEMPLE : une PME qui
+#    vend un logiciel de planification de la maintenance aux PME industrielles de Suisse romande.
+# 4. Vérifiez : python scripts/verifier_installation.py --campagne campagnes/maintenance-romandie
+#
+# Syntaxe : texte entre guillemets, listes entre crochets, # = commentaire.
+
+[campagne]
+nom = "maintenance-romandie"           # À COMPLÉTER : nom court sans espace (rapports, listes Apollo)
+date_reference = ""                    # AAAA-MM-JJ pour figer les fenêtres « moins de 12 mois » ; vide = aujourd'hui
+
+
+# ------------------------------------------------------------------------------------------------------------
+# Qui prospecte, et pour vendre quoi. Sert aux agents (contexte), aux scripts d'appel et aux emails.
+[offre]
+societe = "Exemple SA"                                                        # À COMPLÉTER
+description = "Nous éditons un logiciel qui planifie la maintenance préventive des machines dans les PME industrielles."  # À COMPLÉTER : une phrase
+argument_cle = "Les arrêts de production imprévus coûtent cher : notre logiciel les fait baisser dès le premier mois."  # À COMPLÉTER
+preuves = [                                                                   # À COMPLÉTER : résultats réels, jamais inventés
+  { cas = "planification", phrase = "Chez un sous-traitant de Neuchâtel, les arrêts imprévus ont baissé de moitié en six mois." },
+]
+appelant = "Prénom Nom"                                                       # À COMPLÉTER : qui appelle et signe
+presentation_appelant = "une société de logiciels à Lausanne, qui travaille avec des industriels romands"  # À COMPLÉTER : réponse à « vous êtes qui ? »
+question_ouverte = "Aujourd'hui, comment planifiez-vous la maintenance de vos machines ?"   # À COMPLÉTER
+cta = "20 minutes en visio pour vous montrer comment ça marche : mardi 10 h ou jeudi 14 h ?"  # À COMPLÉTER : une seule question, deux créneaux
+lien_agenda = ""                                                              # facultatif : lien de prise de rendez-vous
+signature_email = "Prénom Nom, Exemple SA"                                    # À COMPLÉTER
+concurrents = "éditeurs de logiciels de maintenance (GMAO), intégrateurs qui vendent la même chose"  # qui exclure comme concurrent ou partenaire
+ne_jamais_dire = [                                                            # phrases ou sujets interdits dans les messages
+  "le nom d'un client sans son accord",
+]
+
+
+# ------------------------------------------------------------------------------------------------------------
+# La cible (ICP) : quelles entreprises viser. Sert à la découverte, au score de fit et au tri A, B, C.
+[cible]
+description = "PME industrielles de 10 à 200 personnes qui fabriquent en Suisse romande (mécanique, décolletage, microtechnique, horlogerie, dispositifs médicaux, électronique)."  # À COMPLÉTER : en une phrase, pour les agents
+pays = ["CH"]                                       # À COMPLÉTER : pays visés (codes ISO à deux lettres)
+regions_prioritaires = ["GE", "VD", "NE", "JU", "FR", "VS"]   # cantons (Suisse) ou régions les mieux notés ; vide = tout le pays
+pays_voisins = ["FR", "DE", "IT", "AT", "LI"]       # acceptés avec une note faible ; tout autre pays est hors zone
+taille_min = 10                                     # effectif idéal : de taille_min à taille_max
+taille_max = 200
+taille_limite = 1000                                # au-delà : grand groupe, exclu
+profil_secteurs = "industrie"                       # règles de secteur fournies : « industrie » (fabricants notés 3) ; « aucun » = seulement [[cible.secteurs]]
+exclusions = [                                      # en clair, pour les agents
+  "distributeurs et revendeurs sans production",
+  "groupes de plus de 1 000 personnes",
+  "éditeurs de logiciels et sociétés de services informatiques",
+]
+# Règles de secteur en plus (ou à la place, avec profil_secteurs = "aucun"). La première règle qui correspond
+# à l'activité de l'entreprise donne la note (0 à 3) ; exclure = true la sort de la cible.
+# [[cible.secteurs]]
+# nom = "imprimerie"
+# note = 3
+# motifs = ["imprimerie", "impression offset", "druckerei"]
+# exclure = false
+
+
+# ------------------------------------------------------------------------------------------------------------
+# Le persona : qui contacter dans chaque entreprise (étape 1, prompt persona ; étape 6, recherche Apollo).
+[persona]
+entree = "direction"                                # famille du premier contact (le décideur)
+relais = ["maintenance", "production", "qualite"]   # familles des contacts relais, par ordre de préférence
+# Familles fournies : direction, qualite, it, production, technique, service, ventes, finance, achats, projet.
+# Ajoutez une famille ou des intitulés (français, anglais, allemand, italien) :
+[persona.titres]
+maintenance = ["responsable maintenance", "chef de maintenance", "head of maintenance", "maintenance manager",
+               "Leiter Instandhaltung", "responsabile manutenzione"]
+
+
+# ------------------------------------------------------------------------------------------------------------
+# Signaux d'achat (étape 5).
+[signaux]
+fenetre_mois = 24                                   # ancienneté maximale d'un signal recherché par les agents
+registre_suisse = true                              # interroger le registre du commerce suisse (Zefix) pour les entreprises suisses
+logiciels = ["SAP", "Odoo", "Microsoft Dynamics", "Sage", "ProConcept", "Infor", "Epicor", "Oracle NetSuite"]   # logiciels à repérer chez les prospects (colonne « Logiciels » du fichier d'appel)
+
+
+# ------------------------------------------------------------------------------------------------------------
+# Apollo (étapes 6 et 7). La clé API va dans le fichier .env, jamais ici (README.md).
+[apollo]
+liste_comptes = "Industrie romande · comptes · Novembre"      # À COMPLÉTER : liste de comptes Apollo (créée à l'étape 6)
+liste_contacts = "Industrie romande · Direction · Novembre"   # À COMPLÉTER : « Segment · Persona · Mois » ; « - entrée » et « - relais » sont ajoutés
+pays_contacts = ["CH", "FR", "DE", "IT", "AT", "LI"]          # pays où un contact peut être basé (sauf dirigeants)
+mobiles = false                                               # true : demander les mobiles (8 crédits Apollo par numéro)
+
+
+# ------------------------------------------------------------------------------------------------------------
+# Appels (étapes 8 et 9).
+[appels]
+langues = ["fr"]                                    # langues parlées par l'appelant : ces contacts passent en premier

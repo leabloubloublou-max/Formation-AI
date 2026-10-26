@@ -1,0 +1,176 @@
+<!doctype html>
+<!--
+  EFFET : Grand bandeau de texte défilant
+
+  Bibliothèque : aucune. CSS pur (une animation), plus 6 lignes de JS facultatives pour le bouton pause.
+  Poids : moins de 1 Ko.
+
+  Ce que ça fait : une ligne de texte en très grand traverse l'écran en continu, sans fin.
+  Elle s'arrête quand la souris passe dessus, et un bouton permet de la mettre en pause
+  (obligatoire : un mouvement de plus de 5 secondes doit pouvoir être arrêté, règle WCAG 2.2.2).
+
+  Quand l'utiliser : comme séparation entre deux sections, pour une liste courte de mots qui
+  disent l'univers (métiers, villes, matières), ou un slogan de 3 à 6 mots. Il fonctionne bien en
+  pied de page ou juste avant l'appel à l'action.
+
+  Quand l'éviter : pour une information que la personne DOIT lire (prix, promesse, conditions) ;
+  pour des logos de clients non autorisés ; en haut de page à côté d'un titre animé ; deux fois sur
+  la même page.
+
+  Accessibilité : le texte est lu une seule fois par les lecteurs d'écran (les copies sont masquées
+  avec aria-hidden). Avec « réduire les animations », le bandeau est immobile et passe à la ligne
+  si besoin. Pause au survol, au focus clavier et avec le bouton.
+
+  Intégrer dans site/ :
+    1. index.html : le bloc <section class="bandeau"> (garder le texte identique dans les deux
+       groupes ; le second est une copie masquée qui assure la boucle sans trou).
+    2. styles.css : le bloc CSS entre les repères « À COPIER ».
+    3. script.js (ou un <script> avant </body>) : le petit script du bouton pause.
+    4. Régler la vitesse avec --bandeau-duree (plus grand = plus lent).
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bandeau de texte défilant</title>
+<style>
+  :root {
+    /* Palette neutre : remplacez par les couleurs de votre charte */
+    --fond: #F2F3F5;
+    --encre: #16181D;
+    --encre-douce: #5B606B;
+    --accent: #3346D3;
+    --filet: #D5D8DE;
+    --police: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --marge: clamp(16px, 4vw, 48px);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fond);
+    color: var(--encre);
+    font-family: var(--police);
+    font-size: clamp(16px, 0.4vw + 15px, 18px);
+    line-height: 1.6;
+  }
+
+  /* Démo seulement (ne pas copier) */
+  .demo-barre { padding: 0 var(--marge); border-bottom: 1px solid var(--filet); }
+  .demo-barre a { display: inline-flex; align-items: center; min-height: 44px; color: var(--encre-douce); font-size: 14px; }
+  .demo-bloc { padding: 80px var(--marge); max-width: 760px; }
+  .demo-bloc h1, .demo-bloc h2 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.08; letter-spacing: -0.02em; margin: 0 0 20px; }
+  .demo-bloc p { color: var(--encre-douce); margin: 0; max-width: 52ch; }
+
+  /* ==== À COPIER (CSS) : début ==== */
+  .bandeau {
+    --bandeau-duree: 38s;           /* vitesse : plus grand = plus lent */
+    --bandeau-espace: 0.5em;        /* espace entre deux mots */
+    position: relative;
+    overflow: hidden;
+    border-block: 1px solid var(--filet);
+    padding-top: clamp(12px, 2.5vw, 28px);
+    padding-bottom: calc(clamp(12px, 2.5vw, 28px) + 52px); /* place pour le bouton pause */
+  }
+  .bandeau__piste {
+    display: flex;
+    width: max-content;
+    animation: bandeau-defile var(--bandeau-duree) linear infinite;
+  }
+  .bandeau__groupe {
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--bandeau-espace);
+    padding-right: var(--bandeau-espace);
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+    font-size: clamp(3rem, 11vw, 9.5rem);
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+  }
+  .bandeau__groupe li + li::before {
+    content: "/";
+    color: var(--accent);
+    font-weight: 300;
+    margin-right: var(--bandeau-espace);
+  }
+  /* Pause : survol, focus clavier, bouton. */
+  .bandeau:hover .bandeau__piste,
+  .bandeau:focus-within .bandeau__piste,
+  .bandeau.est-en-pause .bandeau__piste { animation-play-state: paused; }
+
+  .bandeau__pause {
+    position: absolute;
+    right: var(--marge);
+    bottom: 6px;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 14px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--encre);
+    background: var(--fond);
+    border: 1px solid var(--filet);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .bandeau__pause:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  @keyframes bandeau-defile {
+    to { transform: translateX(-50%); } /* la piste contient deux groupes identiques */
+  }
+
+  /* Réduire les animations : bandeau immobile, le texte passe à la ligne. */
+  @media (prefers-reduced-motion: reduce) {
+    .bandeau { padding-bottom: clamp(12px, 2.5vw, 28px); }
+    .bandeau__piste { animation: none; width: auto; padding-inline: var(--marge); }
+    .bandeau__groupe { flex-wrap: wrap; white-space: normal; flex-shrink: 1; font-size: clamp(2.2rem, 7vw, 5rem); }
+    .bandeau__groupe[aria-hidden="true"], .bandeau__pause { display: none; }
+  }
+  /* ==== À COPIER (CSS) : fin ==== */
+</style>
+</head>
+<body>
+  <nav class="demo-barre"><a href="index.html">Catalogue des effets</a></nav>
+
+  <header class="demo-bloc">
+    <h1>Un bandeau qui défile, entre deux sections.</h1>
+    <p>Des mots qui disent l'univers du projet, pas une information à lire absolument. Passez la souris dessus pour l'arrêter.</p>
+  </header>
+
+  <!-- ==== À COPIER (HTML) : début ==== -->
+  <section class="bandeau" aria-label="Nos ateliers">
+    <div class="bandeau__piste">
+      <ul class="bandeau__groupe">
+        <li>Lausanne</li><li>Genève</li><li>Fribourg</li><li>Neuchâtel</li><li>Sion</li>
+      </ul>
+      <ul class="bandeau__groupe" aria-hidden="true">
+        <li>Lausanne</li><li>Genève</li><li>Fribourg</li><li>Neuchâtel</li><li>Sion</li>
+      </ul>
+    </div>
+    <button class="bandeau__pause" type="button" aria-pressed="false">Mettre en pause</button>
+  </section>
+  <!-- ==== À COPIER (HTML) : fin ==== -->
+
+  <section class="demo-bloc">
+    <h2>La section suivante.</h2>
+    <p>Le bandeau sert de respiration. Un seul par page.</p>
+  </section>
+
+  <!-- ==== À COPIER (JS) : début ==== -->
+  <script>
+    document.querySelectorAll('.bandeau').forEach(function (bandeau) {
+      var bouton = bandeau.querySelector('.bandeau__pause');
+      if (!bouton) return;
+      bouton.addEventListener('click', function () {
+        var pause = bandeau.classList.toggle('est-en-pause');
+        bouton.setAttribute('aria-pressed', String(pause));
+        bouton.textContent = pause ? 'Relancer' : 'Mettre en pause';
+      });
+    });
+  </script>
+  <!-- ==== À COPIER (JS) : fin ==== -->
+</body>
+</html>

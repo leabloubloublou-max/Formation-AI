@@ -1,0 +1,179 @@
+<!doctype html>
+<!--
+  EFFET : Chiffre qui s'anime à l'entrée dans l'écran
+
+  Bibliothèque : aucune (JavaScript du navigateur, environ 40 lignes).
+  Poids : environ 1 Ko.
+
+  Ce que ça fait : quand le chiffre arrive à l'écran, il compte de 0 jusqu'à sa valeur en un peu
+  plus d'une seconde, une seule fois. Le format suit l'usage français (espace entre les milliers,
+  virgule décimale). La source s'affiche sous chaque chiffre.
+
+  RÈGLE ABSOLUE : seulement pour des chiffres SOURCÉS (une source, une date, une méthode), qu'on
+  peut montrer à un client qui demande « d'où ça vient ? ». Pas de chiffre inventé, arrondi
+  flatteur ou estimation présentée comme un fait. Sans chiffre sourcé, ne pas utiliser cet effet.
+  Les chiffres de cette démo sont des exemples marqués comme tels.
+
+  Quand l'utiliser : pour 1 à 3 chiffres qui prouvent la promesse (résultats mesurés, taille d'un
+  marché tirée de l'étude, nombre de clients réels). Une seule rangée par page.
+
+  Quand l'éviter : pour un prix (il doit être lisible tout de suite) ; pour des petits chiffres
+  (de 1 à 10, compter ne sert à rien) ; en haut de page avec le combo « gros chiffre + petit
+  libellé + dégradé », qui est le cliché des sites générés ; sur plus de trois chiffres.
+
+  Accessibilité : le vrai chiffre est écrit dans le HTML (lisible sans JavaScript et par les moteurs
+  de recherche). Le lecteur d'écran lit la valeur finale, jamais le comptage. Avec « réduire les
+  animations », le chiffre s'affiche directement.
+
+  Intégrer dans site/ :
+    1. index.html : un élément <span class="compteur" data-valeur="..."> par chiffre, avec la valeur
+       finale écrite dedans, et sa source juste en dessous.
+       Options : data-decimales="1", data-prefixe="+", data-suffixe=" %".
+    2. styles.css : le bloc CSS entre les repères « À COPIER ».
+    3. script.js (ou <script> avant </body>) : le script « À COPIER (JS) ».
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chiffre qui s'anime</title>
+<style>
+  :root {
+    /* Palette neutre : remplacez par les couleurs de votre charte */
+    --fond: #F2F3F5;
+    --encre: #16181D;
+    --encre-douce: #5B606B;
+    --accent: #3346D3;
+    --filet: #C9CDD4;
+    --police: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --marge: clamp(16px, 4vw, 48px);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fond);
+    color: var(--encre);
+    font-family: var(--police);
+    font-size: clamp(16px, 0.4vw + 15px, 18px);
+    line-height: 1.6;
+  }
+  a { color: inherit; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* Démo seulement (ne pas copier) */
+  .demo-barre { padding: 0 var(--marge); border-bottom: 1px solid var(--filet); }
+  .demo-barre a { display: inline-flex; align-items: center; min-height: 44px; color: var(--encre-douce); font-size: 14px; }
+  .demo-bloc { padding: clamp(64px, 12vh, 112px) var(--marge); max-width: 1100px; }
+  .demo-bloc h1, .demo-bloc h2 { font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.06; letter-spacing: -0.02em; margin: 0 0 16px; max-width: 18ch; }
+  .demo-bloc > p { color: var(--encre-douce); margin: 0; max-width: 52ch; }
+  .demo-espace { height: 70vh; }
+
+  /* ==== À COPIER (CSS) : début ==== */
+  .chiffres {
+    display: grid;
+    gap: 40px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 760px) { .chiffres { grid-template-columns: repeat(3, 1fr); gap: 32px; } }
+  .chiffre { margin: 0; border-top: 1px solid var(--filet); padding-top: 20px; }
+  .chiffre p { margin: 0; }
+  .compteur {
+    display: block;
+    font-size: clamp(3rem, 8vw, 5.5rem);
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;   /* les chiffres gardent la même largeur : pas de saut */
+  }
+  .chiffre .chiffre__libelle { font-size: 1.05rem; margin: 12px 0 6px; max-width: 26ch; }
+  .chiffre__source { font-size: 14px; color: var(--encre-douce); }
+  .visuellement-cache {
+    position: absolute !important; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+  /* ==== À COPIER (CSS) : fin ==== */
+</style>
+</head>
+<body>
+  <nav class="demo-barre"><a href="index.html">Catalogue des effets</a></nav>
+
+  <header class="demo-bloc">
+    <h1>Des chiffres qui comptent, et qui sont sourcés.</h1>
+    <p>Faites défiler&nbsp;: les chiffres comptent jusqu'à leur valeur quand ils arrivent à l'écran. Ceux de cette démo sont des exemples&nbsp;: remplacez-les par vos chiffres et leur source.</p>
+  </header>
+  <div class="demo-espace" aria-hidden="true"></div>
+
+  <!-- ==== À COPIER (HTML) : début ==== -->
+  <section class="demo-bloc" aria-labelledby="chiffres-titre">
+    <h2 id="chiffres-titre">Ce que disent les mesures.</h2>
+    <ul class="chiffres">
+      <li class="chiffre">
+        <p class="chiffre__valeur"><span class="compteur" data-valeur="12480">12&#8239;480</span></p>
+        <p class="chiffre__libelle">commandes traitées en 2025</p>
+        <p class="chiffre__source">Exemple de démo. Source&nbsp;: [À FOURNIR, ex. export du logiciel de caisse, janvier 2026]</p>
+      </li>
+      <li class="chiffre">
+        <p class="chiffre__valeur"><span class="compteur" data-valeur="37" data-suffixe="&#8239;%">37&#8239;%</span></p>
+        <p class="chiffre__libelle">de temps de saisie en moins</p>
+        <p class="chiffre__source">Exemple de démo. Source&nbsp;: [À FOURNIR, ex. mesure sur 4 semaines chez un client nommé]</p>
+      </li>
+      <li class="chiffre">
+        <p class="chiffre__valeur"><span class="compteur" data-valeur="4.8" data-decimales="1" data-suffixe="&#8239;/&#8239;5">4,8&#8239;/&#8239;5</span></p>
+        <p class="chiffre__libelle">note moyenne des clients</p>
+        <p class="chiffre__source">Exemple de démo. Source&nbsp;: [À FOURNIR, ex. 112 avis Google au 1er octobre 2026]</p>
+      </li>
+    </ul>
+  </section>
+  <!-- ==== À COPIER (HTML) : fin ==== -->
+  <div class="demo-espace" aria-hidden="true"></div>
+
+  <!-- ==== À COPIER (JS) : début ==== -->
+  <script>
+    (function () {
+      var compteurs = document.querySelectorAll('.compteur[data-valeur]');
+      var mouvementOk = window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
+      if (!compteurs.length || !mouvementOk || !('IntersectionObserver' in window)) return; // le HTML affiche déjà la valeur
+
+      var duree = 1400; // en millisecondes
+      var sortie = function (t) { return 1 - Math.pow(1 - t, 4); }; // ralentit à la fin
+
+      function formater(el, n) {
+        var dec = parseInt(el.getAttribute('data-decimales') || '0', 10);
+        var texte = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(n);
+        return (el.getAttribute('data-prefixe') || '') + texte + (el.getAttribute('data-suffixe') || '');
+      }
+
+      compteurs.forEach(function (el) {
+        var cible = parseFloat(el.getAttribute('data-valeur'));
+        // Le lecteur d'écran lit la valeur finale ; le comptage visible lui est caché.
+        var lu = document.createElement('span');
+        lu.className = 'visuellement-cache';
+        lu.textContent = el.textContent;
+        el.setAttribute('aria-hidden', 'true');
+        el.after(lu);
+        el.textContent = formater(el, 0);
+        el._cible = cible;
+      });
+
+      var observateur = new IntersectionObserver(function (entrees) {
+        entrees.forEach(function (entree) {
+          if (!entree.isIntersecting) return;
+          var el = entree.target;
+          observateur.unobserve(el); // une seule fois
+          var debut = performance.now();
+          (function image(maintenant) {
+            var t = Math.min((maintenant - debut) / duree, 1);
+            el.textContent = formater(el, el._cible * sortie(t));
+            if (t < 1) requestAnimationFrame(image);
+          })(debut);
+        });
+      }, { threshold: 0.6 });
+
+      compteurs.forEach(function (el) { observateur.observe(el); });
+    })();
+  </script>
+  <!-- ==== À COPIER (JS) : fin ==== -->
+</body>
+</html>

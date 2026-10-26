@@ -1,0 +1,168 @@
+<!doctype html>
+<!--
+  EFFET : Titre révélé ligne par ligne
+
+  Bibliothèque : GSAP 3.15.0 + SplitText, depuis jsdelivr (version figée).
+                 Licence GSAP « Standard no charge » : gratuite, y compris pour un usage commercial.
+  Poids : environ 32 Ko compressés (gsap 28 Ko + SplitText 4 Ko).
+
+  Ce que ça fait : au chargement, le titre principal apparaît ligne par ligne, chaque ligne
+  glissant depuis un masque. Ensuite il ne bouge plus. Le découpage suit la vraie mise en page :
+  si l'écran change de largeur, les lignes sont recalculées.
+
+  Quand l'utiliser : pour LE titre du haut de page, quand la phrase est forte et courte
+  (2 à 4 lignes). C'est le moment fort de la page : le reste reste immobile.
+
+  Quand l'éviter : sur les titres de section (l'effet répété partout devient le « fade-up » générique
+  des sites générés), sur du texte courant, sur un titre de plus de 5 lignes sur téléphone.
+
+  Accessibilité : avec « réduire les animations », aucune animation, le titre est affiché tout de suite.
+  SplitText pose un aria-label sur le titre : les lecteurs d'écran lisent la phrase entière.
+  Si le CDN ne répond pas, le titre s'affiche quand même (filet de sécurité de 2,5 s).
+
+  Intégrer dans site/ :
+    1. index.html, dans <head> : le petit <script> marqué « À COPIER (head) ».
+    2. index.html, avant </body> : les deux <script src> GSAP, puis le <script> marqué « À COPIER (fin) »
+       (ou son contenu dans script.js, chargé après les deux scripts GSAP).
+    3. styles.css : le bloc CSS entre les repères « À COPIER ».
+    4. Ajouter class="titre-revele" sur le <h1>.
+    5. Remplacer les variables de :root par celles de la charte.
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Titre révélé ligne par ligne</title>
+
+<!-- ==== À COPIER (head) : début ==== -->
+<script>
+  // Cache le titre le temps de préparer l'animation, seulement si le mouvement est autorisé.
+  if (window.matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+    document.documentElement.classList.add('revele-attente');
+    // Filet de sécurité : si GSAP ne se charge pas, le titre réapparaît.
+    setTimeout(function () { document.documentElement.classList.remove('revele-attente'); }, 2500);
+  }
+</script>
+<!-- ==== À COPIER (head) : fin ==== -->
+
+<style>
+  :root {
+    /* Palette neutre : remplacez par les couleurs de votre charte */
+    --fond: #F2F3F5;
+    --encre: #16181D;
+    --encre-douce: #5B606B;
+    --accent: #3346D3;
+    --filet: #D5D8DE;
+    --police: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --marge: clamp(16px, 4vw, 48px);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fond);
+    color: var(--encre);
+    font-family: var(--police);
+    font-size: clamp(16px, 0.4vw + 15px, 18px);
+    line-height: 1.6;
+  }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* Barre de démonstration (ne pas copier) */
+  .demo-barre { padding: 0 var(--marge); border-bottom: 1px solid var(--filet); }
+  .demo-barre a { display: inline-flex; align-items: center; min-height: 44px; color: var(--encre-douce); font-size: 14px; }
+  .demo-rejouer {
+    margin-top: 40px; min-height: 44px; padding: 0 18px; font: inherit; font-size: 15px;
+    background: transparent; color: var(--encre); border: 1px solid var(--filet); border-radius: 8px; cursor: pointer;
+  }
+
+  .hero {
+    min-height: calc(100svh - 45px);
+    padding: clamp(48px, 10vh, 120px) var(--marge);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    max-width: 1280px;
+  }
+  .hero p { max-width: 46ch; color: var(--encre-douce); margin: 32px 0 0; }
+
+  /* ==== À COPIER (CSS) : début ==== */
+  .titre-revele {
+    margin: 0;
+    font-size: clamp(2.6rem, 8.5vw, 6.5rem);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    max-width: 13ch;
+    text-wrap: balance;
+  }
+  /* Le masque laisse de la place aux jambages (g, p, j) sans changer l'interligne. */
+  .titre-revele .ligne-mask { padding-bottom: 0.14em; margin-bottom: -0.14em; }
+  /* Le titre reste caché le temps du découpage (seulement si le JS l'a demandé). */
+  .revele-attente .titre-revele { visibility: hidden; }
+  /* ==== À COPIER (CSS) : fin ==== */
+</style>
+</head>
+<body>
+  <nav class="demo-barre"><a href="index.html">Catalogue des effets</a></nav>
+
+  <main class="hero">
+    <h1 class="titre-revele">Une phrase forte mérite d'arriver ligne après ligne.</h1>
+    <p>Le titre se pose au chargement, puis ne bouge plus. Le reste de la page reste immobile&nbsp;: c'est ce contraste qui fait l'effet.</p>
+    <div><button class="demo-rejouer" type="button" hidden>Rejouer l'animation</button></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+
+  <!-- ==== À COPIER (fin) : début ==== -->
+  <script>
+    (function () {
+      var racine = document.documentElement;
+      var fin = function () { racine.classList.remove('revele-attente'); };
+      var titres = document.querySelectorAll('.titre-revele');
+      var mouvementOk = window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
+      if (!titres.length || !mouvementOk || !window.gsap || !window.SplitText) { fin(); return; }
+
+      gsap.registerPlugin(SplitText);
+      window.titresAnimes = [];
+
+      // On attend les polices : sinon les lignes seraient calculées avec la mauvaise police.
+      document.fonts.ready.then(function () {
+        titres.forEach(function (titre) {
+          SplitText.create(titre, {
+            type: 'lines',
+            linesClass: 'ligne',
+            mask: 'lines',      // chaque ligne glisse depuis sous un masque (classe « ligne-mask »)
+            autoSplit: true,    // recalcule les lignes si la largeur change
+            onSplit: function (self) {
+              var anim = gsap.from(self.lines, {
+                yPercent: 105,
+                duration: 0.9,
+                ease: 'power3.out',
+                stagger: 0.12,
+                delay: 0.15
+              });
+              window.titresAnimes.push(anim);
+              return anim;
+            }
+          });
+        });
+        fin();
+      });
+    })();
+  </script>
+  <!-- ==== À COPIER (fin) : fin ==== -->
+
+  <!-- Démo seulement : bouton pour rejouer -->
+  <script>
+    (function () {
+      var bouton = document.querySelector('.demo-rejouer');
+      if (!window.matchMedia('(prefers-reduced-motion: no-preference)').matches || !window.gsap) return;
+      bouton.hidden = false;
+      bouton.addEventListener('click', function () {
+        (window.titresAnimes || []).forEach(function (a) { a.restart(true); });
+      });
+    })();
+  </script>
+</body>
+</html>

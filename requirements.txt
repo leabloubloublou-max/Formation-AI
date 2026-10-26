@@ -1,0 +1,8 @@
+# Paquets Python du kit (Python 3.11 ou plus).
+# Installation, depuis la racine du repo :
+#   python3 -m venv .venv
+#   .venv/bin/pip install -r requirements.txt
+-r .claude/skills/prospection-base-client/requirements.txt
+
+# Landing page : voir les pages comme un navigateur (captures, tests)
+playwright>=1.45       # puis, une fois : .venv/bin/python -m playwright install chromium

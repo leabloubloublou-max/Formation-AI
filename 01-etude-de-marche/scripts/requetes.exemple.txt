@@ -1,0 +1,7 @@
+# Une requête par ligne. Les lignes qui commencent par # sont ignorées.
+# Exemple : chercher des concurrents de BUMPSLAB en Suisse romande.
+intégrateur intelligence artificielle PME Suisse romande
+agence IA données internes entreprise Lausanne
+assistant IA ERP PME Genève
+connecter ERP à ChatGPT entreprise Suisse
+automatisation IA PME industrielle Vaud

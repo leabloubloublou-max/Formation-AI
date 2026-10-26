@@ -1,0 +1,158 @@
+<!doctype html>
+<!--
+  EFFET : Défilement fluide (Lenis) relié à ScrollTrigger
+
+  Bibliothèques : Lenis 1.3.27 (licence MIT) + sa feuille CSS, depuis jsdelivr (version figée).
+                  En option GSAP 3.15.0 + ScrollTrigger, seulement si la page utilise déjà un autre
+                  effet GSAP au défilement (section épinglée, par exemple).
+  Poids : Lenis seul environ 6 Ko compressés. Avec GSAP + ScrollTrigger : environ 52 Ko.
+
+  Ce que ça fait : la molette de la souris et le pavé tactile font défiler la page avec inertie,
+  de façon douce et régulière, au lieu des à-coups de la molette. Les liens d'ancre (#section)
+  glissent jusqu'à leur cible. Sur téléphone, Lenis laisse le défilement natif du système
+  (déjà fluide) : rien ne change pour le pouce.
+  Dans cette démo, une fine barre en haut montre la progression de lecture : elle sert à voir
+  que ScrollTrigger reste synchronisé avec Lenis.
+
+  Quand l'utiliser : sur une page plutôt longue et éditoriale, ou avec une section épinglée
+  (l'épinglage paraît beaucoup plus propre avec Lenis). C'est un effet de fond, pas un moment fort :
+  il peut accompagner l'effet principal de la page.
+
+  Quand l'éviter : sur une page courte (un écran ou deux), sur un formulaire long, dans une page
+  avec des zones qui défilent à l'intérieur (cartes, listes, iframes) sans les avoir marquées
+  data-lenis-prevent. Ne jamais régler une inertie forte : la page doit répondre tout de suite.
+
+  Accessibilité : avec « réduire les animations », Lenis n'est pas démarré du tout : défilement
+  natif du navigateur. Le clavier (flèches, espace, Tab) garde le comportement natif.
+
+  Intégrer dans site/ :
+    1. index.html, dans <head> : le <link> vers lenis.css.
+    2. index.html, avant </body> : le <script src> de Lenis (et, si la page a déjà un effet GSAP,
+       les scripts gsap et ScrollTrigger AVANT Lenis), puis le <script> « À COPIER (fin) ».
+    3. Ne rien ajouter au CSS : lenis.css suffit. Retirer « scroll-behavior: smooth » s'il existe.
+    4. Une zone qui doit défiler seule (liste, carte) : lui ajouter l'attribut data-lenis-prevent.
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Défilement fluide</title>
+
+<!-- ==== À COPIER (head) ==== -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lenis@1.3.27/dist/lenis.css">
+
+<style>
+  :root {
+    /* Palette neutre : remplacez par les couleurs de votre charte */
+    --fond: #F2F3F5;
+    --encre: #16181D;
+    --encre-douce: #5B606B;
+    --accent: #3346D3;
+    --filet: #D5D8DE;
+    --police: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --marge: clamp(16px, 4vw, 48px);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fond);
+    color: var(--encre);
+    font-family: var(--police);
+    font-size: clamp(16px, 0.4vw + 15px, 18px);
+    line-height: 1.6;
+  }
+  a { color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* Démo seulement (ne pas copier) */
+  .demo-barre { padding: 0 var(--marge); border-bottom: 1px solid var(--filet); }
+  .demo-barre a { display: inline-flex; align-items: center; min-height: 44px; color: var(--encre-douce); font-size: 14px; }
+  .lecture { position: fixed; inset: 0 0 auto 0; height: 3px; background: var(--accent); transform-origin: left; transform: scaleX(0); z-index: 10; }
+  article { max-width: 680px; padding: 72px var(--marge) 50vh; }
+  article h1 { font-size: clamp(2.2rem, 6vw, 4rem); line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 24px; }
+  article h2 { font-size: clamp(1.4rem, 3vw, 2rem); line-height: 1.15; margin: 72px 0 16px; scroll-margin-top: 24px; }
+  article p { margin: 0 0 1em; max-width: 62ch; }
+  .sommaire { display: flex; flex-wrap: wrap; gap: 4px 20px; padding: 0; margin: 32px 0 0; list-style: none; }
+  .sommaire a { display: inline-flex; align-items: center; min-height: 44px; }
+  .zone-interne { max-height: 180px; overflow: auto; border: 1px solid var(--filet); border-radius: 8px; padding: 12px 16px; margin: 24px 0; background: #fff; }
+  .zone-interne p { font-size: 15px; }
+  .etat { font-size: 14px; color: var(--encre-douce); }
+</style>
+</head>
+<body>
+  <nav class="demo-barre"><a href="index.html">Catalogue des effets</a></nav>
+  <div class="lecture" aria-hidden="true"></div>
+
+  <article>
+    <h1>Faites défiler à la molette ou au pavé tactile.</h1>
+    <p>La page glisse avec une légère inertie au lieu d'avancer par à-coups. Sur téléphone, rien ne change&nbsp;: le défilement du système est déjà fluide.</p>
+    <p class="etat" id="etat">Défilement natif du navigateur.</p>
+    <ul class="sommaire">
+      <li><a href="#partie-1">Pourquoi c'est discret</a></li>
+      <li><a href="#partie-2">Les zones internes</a></li>
+      <li><a href="#partie-3">Avec GSAP</a></li>
+    </ul>
+
+    <h2 id="partie-1">Pourquoi c'est discret</h2>
+    <p>Un défilement fluide ne se remarque pas, il se ressent. Il donne une impression de soin sans attirer l'œil, et c'est pour cela qu'il peut accompagner le moment fort de la page sans lui voler la vedette.</p>
+    <p>La règle&nbsp;: une inertie courte. Si la page met plus d'une demi-seconde à s'arrêter après le geste, la personne a l'impression de perdre le contrôle.</p>
+    <p>Les liens du sommaire, plus haut, glissent jusqu'à leur titre au lieu de sauter.</p>
+
+    <h2 id="partie-2">Les zones internes</h2>
+    <p>Une zone qui défile seule, comme celle-ci, porte l'attribut <code>data-lenis-prevent</code>&nbsp;: la molette la fait défiler elle, pas la page.</p>
+    <div class="zone-interne" data-lenis-prevent tabindex="0" aria-label="Zone qui défile seule">
+      <p>Première ligne de la zone interne.</p><p>Deuxième ligne.</p><p>Troisième ligne.</p><p>Quatrième ligne.</p><p>Cinquième ligne.</p><p>Sixième ligne.</p><p>Septième ligne.</p><p>Dernière ligne.</p>
+    </div>
+
+    <h2 id="partie-3">Avec GSAP</h2>
+    <p>Quand la page porte déjà un effet GSAP au défilement, Lenis et ScrollTrigger doivent partager la même horloge, sinon l'épinglage tremble. Le script ci-dessous s'en charge s'il trouve GSAP sur la page, et s'en passe sinon.</p>
+    <p>La barre fine tout en haut suit la lecture&nbsp;: c'est ScrollTrigger qui la pilote, à partir de la position calculée par Lenis.</p>
+  </article>
+
+  <!-- Facultatif : seulement si la page a déjà un effet GSAP au défilement. -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+  <!-- Obligatoire -->
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.27/dist/lenis.min.js"></script>
+
+  <!-- ==== À COPIER (fin) : début ==== -->
+  <script>
+    (function () {
+      var reduit = window.matchMedia('(prefers-reduced-motion: reduce)');
+      if (reduit.matches || !window.Lenis) return; // défilement natif
+
+      var avecGsap = !!(window.gsap && window.ScrollTrigger);
+      var lenis = new Lenis({
+        lerp: 0.12,          // inertie courte : plus le chiffre est petit, plus ça glisse
+        anchors: true,       // les liens #ancre glissent jusqu'à leur cible
+        autoRaf: !avecGsap   // sans GSAP, Lenis gère seul son horloge
+      });
+      window.lenis = lenis;
+
+      if (avecGsap) {
+        gsap.registerPlugin(ScrollTrigger);
+        // Lenis prévient ScrollTrigger à chaque mouvement...
+        lenis.on('scroll', ScrollTrigger.update);
+        // ...et avance au même rythme que GSAP.
+        gsap.ticker.add(function (temps) { lenis.raf(temps * 1000); });
+        gsap.ticker.lagSmoothing(0);
+      }
+
+      // Si la personne active « réduire les animations » en cours de route : on arrête.
+      reduit.addEventListener('change', function (e) { if (e.matches) lenis.destroy(); });
+    })();
+  </script>
+  <!-- ==== À COPIER (fin) : fin ==== -->
+
+  <!-- Démo seulement : barre de lecture pilotée par ScrollTrigger, et état affiché -->
+  <script>
+    (function () {
+      var etat = document.getElementById('etat');
+      if (window.lenis) etat.textContent = 'Défilement fluide actif (Lenis' + (window.gsap ? ' + ScrollTrigger' : '') + ').';
+      if (!window.gsap || !window.ScrollTrigger) return;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      gsap.to('.lecture', { scaleX: 1, ease: 'none', scrollTrigger: { start: 0, end: 'max', scrub: true } });
+    })();
+  </script>
+</body>
+</html>

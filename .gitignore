@@ -1,0 +1,27 @@
+# Clés et secrets : jamais sur GitHub
+.env
+.env.*
+!exemple.env
+
+# Environnements et dépendances
+.venv/
+venv/
+__pycache__/
+*.pyc
+node_modules/
+.vercel/
+
+# Réglages personnels de Claude Code
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Données nominatives des campagnes de prospection (emails, téléphones)
+03-prospection/campagnes/*
+!03-prospection/campagnes/.gitkeep
+
+# Captures de test
+02-landing-page/travail/**/*.png
+
+# Système
+.DS_Store
+Thumbs.db

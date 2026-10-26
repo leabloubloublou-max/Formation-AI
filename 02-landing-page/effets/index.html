@@ -1,0 +1,107 @@
+<!doctype html>
+<!--
+  Page catalogue des effets testés. Elle ne sert qu'à les parcourir : elle n'est pas mise en ligne.
+  Ouvrir avec Live Preview dans VS Code (clic droit > Show Preview), puis cliquer sur un effet.
+  Le détail de chaque effet (quand l'utiliser, comment l'intégrer) est dans README.md et en tête
+  de chaque fichier.
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catalogue des effets</title>
+<style>
+  :root {
+    --fond: #F2F3F5;
+    --encre: #16181D;
+    --encre-douce: #5B606B;
+    --accent: #3346D3;
+    --filet: #C9CDD4;
+    --police: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --marge: clamp(16px, 4vw, 48px);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fond);
+    color: var(--encre);
+    font-family: var(--police);
+    font-size: clamp(16px, 0.4vw + 15px, 18px);
+    line-height: 1.6;
+  }
+  main { max-width: 1100px; padding: clamp(48px, 10vh, 112px) var(--marge) 96px; }
+  h1 { font-size: clamp(2.4rem, 7vw, 5rem); line-height: 1.02; letter-spacing: -0.03em; margin: 0 0 24px; max-width: 14ch; }
+  .intro { color: var(--encre-douce); max-width: 58ch; margin: 0 0 56px; }
+  .intro strong { color: var(--encre); font-weight: 600; }
+  ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--filet); }
+  li { border-bottom: 1px solid var(--filet); }
+  a.effet {
+    display: grid;
+    gap: 4px 32px;
+    padding: 24px 0;
+    min-height: 44px;
+    color: inherit;
+    text-decoration: none;
+  }
+  @media (min-width: 760px) { a.effet { grid-template-columns: 1fr 1.3fr auto; align-items: baseline; } }
+  .effet__nom { font-size: clamp(1.3rem, 2.6vw, 1.8rem); font-weight: 650; letter-spacing: -0.015em; line-height: 1.2; }
+  .effet__usage { color: var(--encre-douce); max-width: 46ch; }
+  .effet__lib { font-size: 14px; color: var(--encre-douce); white-space: nowrap; }
+  a.effet:hover .effet__nom { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+  a.effet:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .pied { margin-top: 48px; color: var(--encre-douce); font-size: 15px; max-width: 62ch; }
+  code { font-size: 0.92em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Huit effets testés, un seul moment fort.</h1>
+  <p class="intro">Chaque effet est un fichier autonome à ouvrir, tester et copier dans <code>site/</code>. <strong>Une page en choisit un, rarement deux.</strong> Tous se coupent proprement avec le réglage «&nbsp;réduire les animations&nbsp;» du téléphone ou de l'ordinateur.</p>
+
+  <ul>
+    <li><a class="effet" href="titre-revele.html">
+      <span class="effet__nom">Titre révélé ligne par ligne</span>
+      <span class="effet__usage">Le titre du haut de page arrive au chargement, puis ne bouge plus.</span>
+      <span class="effet__lib">GSAP, SplitText</span>
+    </a></li>
+    <li><a class="effet" href="section-epinglee.html">
+      <span class="effet__nom">Section épinglée en trois étapes</span>
+      <span class="effet__usage">La section se fixe à l'écran et le défilement fait passer les étapes.</span>
+      <span class="effet__lib">GSAP, ScrollTrigger</span>
+    </a></li>
+    <li><a class="effet" href="defilement-fluide.html">
+      <span class="effet__nom">Défilement fluide</span>
+      <span class="effet__usage">La molette fait glisser la page avec une inertie courte. Effet de fond, discret.</span>
+      <span class="effet__lib">Lenis</span>
+    </a></li>
+    <li><a class="effet" href="bandeau-defilant.html">
+      <span class="effet__nom">Bandeau de texte défilant</span>
+      <span class="effet__usage">Une ligne de mots en très grand traverse l'écran, entre deux sections.</span>
+      <span class="effet__lib">CSS seul</span>
+    </a></li>
+    <li><a class="effet" href="grain.html">
+      <span class="effet__nom">Grain sur le fond</span>
+      <span class="effet__usage">Un grain fixe donne de la matière aux aplats de couleur.</span>
+      <span class="effet__lib">CSS seul</span>
+    </a></li>
+    <li><a class="effet" href="fond-shader.html">
+      <span class="effet__nom">Fond animé en dégradé organique</span>
+      <span class="effet__usage">Trois couleurs de la charte se mélangent lentement derrière le titre.</span>
+      <span class="effet__lib">OGL (WebGL)</span>
+    </a></li>
+    <li><a class="effet" href="suivi-souris.html">
+      <span class="effet__nom">Bouton magnétique et aperçu</span>
+      <span class="effet__usage">Le bouton principal est attiré par la souris, ou une image suit le pointeur sur une liste.</span>
+      <span class="effet__lib">JavaScript seul</span>
+    </a></li>
+    <li><a class="effet" href="compteur.html">
+      <span class="effet__nom">Chiffre qui s'anime</span>
+      <span class="effet__usage">Un chiffre sourcé compte jusqu'à sa valeur en arrivant à l'écran.</span>
+      <span class="effet__lib">JavaScript seul</span>
+    </a></li>
+  </ul>
+
+  <p class="pied">Le tableau complet (poids, accessibilité, à utiliser pour, à éviter si) et les règles d'or sont dans <code>README.md</code>. Pour tester une page dans un vrai navigateur&nbsp;: <code>tester.py</code>.</p>
+</main>
+</body>
+</html>

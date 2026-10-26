@@ -1,0 +1,115 @@
+<!doctype html>
+<!--
+  EFFET : Grain sur le fond
+
+  Bibliothèque : aucune. CSS pur, avec un filtre SVG (feTurbulence) écrit directement dans le CSS.
+  Poids : moins de 1 Ko, aucun fichier image.
+
+  Ce que ça fait : pose un grain fin, comme du papier ou de la pellicule, sur un fond uni ou
+  sur un aplat de couleur. Le fond perd son aspect « écran parfaitement lisse » des sites générés.
+  Le grain est immobile : ce n'est pas une animation.
+
+  Quand l'utiliser : sur un fond de couleur franche ou sombre, une section de couleur, un haut de
+  page sans photo. Il s'associe bien avec un autre effet (titre révélé, shader), car il ne bouge pas.
+
+  Quand l'éviter : par-dessus des photos (il les salit), avec une opacité forte (au-delà de 0,15 le
+  texte devient moins net), sur un fond déjà texturé.
+
+  Accessibilité : décoratif, invisible pour les lecteurs d'écran (pseudo-élément), ne bouge pas,
+  n'intercepte pas les clics. À vérifier : le contraste du texte reste bon une fois le grain posé.
+
+  Intégrer dans site/ :
+    1. styles.css : le bloc CSS entre les repères « À COPIER ».
+    2. Ajouter class="avec-grain" sur la section voulue (ou sur <body> pour toute la page).
+    3. Régler --grain-opacite (0,06 à 0,12 en général) et --grain-taille (finesse du grain).
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grain sur le fond</title>
+<style>
+  :root {
+    /* Palette neutre : remplacez par les couleurs de votre charte */
+    --fond: #F2F3F5;
+    --encre: #16181D;
+    --encre-douce: #5B606B;
+    --aplat: #2F3BA8;
+    --texte-aplat: #F2F3F5;
+    --sombre: #16181D;
+    --texte-sombre: #E6E8EC;
+    --filet: #D5D8DE;
+    --police: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --marge: clamp(16px, 4vw, 48px);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fond);
+    color: var(--encre);
+    font-family: var(--police);
+    font-size: clamp(16px, 0.4vw + 15px, 18px);
+    line-height: 1.6;
+  }
+
+  /* Démo seulement (ne pas copier) */
+  .demo-barre { padding: 0 var(--marge); border-bottom: 1px solid var(--filet); }
+  .demo-barre a { display: inline-flex; align-items: center; min-height: 44px; color: var(--encre-douce); font-size: 14px; }
+  .demo-section { padding: clamp(64px, 12vh, 120px) var(--marge); }
+  .demo-section h1, .demo-section h2 { font-size: clamp(2.2rem, 6vw, 4.4rem); line-height: 1.04; letter-spacing: -0.025em; margin: 0 0 20px; max-width: 14ch; }
+  .demo-section p { margin: 0; max-width: 50ch; opacity: .85; }
+  .demo-aplat { background: var(--aplat); color: var(--texte-aplat); min-height: 70svh; display: flex; flex-direction: column; justify-content: flex-end; }
+  .demo-sombre { background: var(--sombre); color: var(--texte-sombre); }
+  .demo-comparaison { display: grid; grid-template-columns: 1fr 1fr; }
+  .demo-comparaison > div { padding: 48px var(--marge); background: var(--aplat); color: var(--texte-aplat); font-size: 15px; min-height: 180px; }
+
+  /* ==== À COPIER (CSS) : début ==== */
+  .avec-grain {
+    --grain-opacite: 0.1;
+    --grain-taille: 180px;
+    position: relative;
+    isolation: isolate;
+  }
+  .avec-grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;             /* sous le texte, au-dessus du fond de la section */
+    pointer-events: none;
+    opacity: var(--grain-opacite);
+    background-size: var(--grain-taille);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.4 -0.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+    mix-blend-mode: multiply;
+  }
+  /* Sur fond sombre, le grain s'éclaircit au lieu d'assombrir. */
+  .avec-grain.grain-clair::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.4 -0.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+    mix-blend-mode: screen;
+  }
+  /* ==== À COPIER (CSS) : fin ==== */
+</style>
+</head>
+<body>
+  <nav class="demo-barre"><a href="index.html">Catalogue des effets</a></nav>
+
+  <header class="demo-section demo-aplat avec-grain">
+    <h1>Un aplat qui a de la matière.</h1>
+    <p>Le grain est fixe et très léger. Il retire l'aspect lisse et numérique des fonds unis, sans rien ajouter à lire.</p>
+  </header>
+
+  <section class="demo-comparaison" aria-label="Comparaison avec et sans grain">
+    <div>Sans grain</div>
+    <div class="avec-grain" style="--grain-opacite: .14">Avec grain (0,14)</div>
+  </section>
+
+  <section class="demo-section demo-sombre avec-grain grain-clair">
+    <h2>Sur fond sombre aussi.</h2>
+    <p>Ajoutez la classe grain-clair&nbsp;: le grain éclaircit le fond au lieu de l'assombrir.</p>
+  </section>
+
+  <section class="demo-section avec-grain" style="--grain-opacite: .07">
+    <h2>Et sur le fond clair.</h2>
+    <p>À faible dose (0,07), c'est presque imperceptible&nbsp;: on le remarque surtout quand on l'enlève.</p>
+  </section>
+</body>
+</html>
